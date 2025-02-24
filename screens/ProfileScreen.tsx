@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { onValue, ref, set } from 'firebase/database';
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, Image, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Dimensions, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import MapView, { MapPressEvent, Marker, Polygon } from 'react-native-maps';
 import { Button, Input, Paragraph, XStack, YStack } from 'tamagui';
 import { auth, database, storage } from '../services/firebase';
@@ -87,7 +87,6 @@ const ProfileSettingsScreen: React.FC = () => {
       Alert.alert('Permission required', 'カメラロールへのアクセス許可が必要です。');
       return;
     }
-    // Expo SDK 48以降の場合、assets 配列から URI を取得
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -166,7 +165,7 @@ const ProfileSettingsScreen: React.FC = () => {
       const guideData = {
         name: guideName,
         role: 'guide',
-        profileImageUrl, // 共通のプロフィール画像
+        profileImageUrl,
         comment: guideComment,
         polygon: points,
         updatedAt: Date.now(),
@@ -193,17 +192,16 @@ const ProfileSettingsScreen: React.FC = () => {
           </Button>
         </XStack>
 
-        {/* 画像選択ボタンを一番上に配置 */}
-        <Button onPress={handlePickImage} size="$4">
-          プロフィール画像を選択
-        </Button>
-        {profileImageUrl ? (
-          <Image source={{ uri: profileImageUrl }} style={styles.profilePreview} />
-        ) : (
-          <View style={[styles.profilePreview, styles.placeholderContainer]}>
-            <User size={48} color="#ccc" />
-          </View>
-        )}
+        {/* プロフィール画像はタップで画像選択 */}
+        <TouchableOpacity onPress={handlePickImage}>
+          {profileImageUrl ? (
+            <Image source={{ uri: profileImageUrl }} style={styles.profilePreview} />
+          ) : (
+            <View style={[styles.profilePreview, styles.placeholderContainer]}>
+              <User size={48} color="#ccc" />
+            </View>
+          )}
+        </TouchableOpacity>
 
         {role === 'traveler' ? (
           // 旅行者用フォーム
@@ -344,6 +342,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#eee',
   },
-  saveButton: {
-  },
+  saveButton: {},
 });
