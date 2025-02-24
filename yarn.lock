@@ -6539,6 +6539,7 @@ __metadata:
   languageName: node
   linkType: hard
 
+<<<<<<< HEAD
 "bl@npm:^4.1.0":
   version: 4.1.0
   resolution: "bl@npm:4.1.0"
@@ -6557,6 +6558,8 @@ __metadata:
   languageName: node
   linkType: hard
 
+=======
+>>>>>>> d424293 (update)
 "boolbase@npm:^1.0.0":
   version: 1.0.0
   resolution: "boolbase@npm:1.0.0"
@@ -10532,6 +10535,7 @@ __metadata:
   languageName: node
   linkType: hard
 
+<<<<<<< HEAD
 "md5@npm:~2.2.0":
   version: 2.2.1
   resolution: "md5@npm:2.2.1"
@@ -10550,6 +10554,8 @@ __metadata:
   languageName: node
   linkType: hard
 
+=======
+>>>>>>> d424293 (update)
 "mdn-data@npm:2.0.14":
   version: 2.0.14
   resolution: "mdn-data@npm:2.0.14"
@@ -13876,7 +13882,10 @@ __metadata:
     "@react-native-firebase/auth": "npm:^21.11.0"
     "@react-navigation/native": "npm:^7.0.14"
     "@react-navigation/stack": "npm:^7.1.1"
+<<<<<<< HEAD
     "@siposdani87/expo-maps-polygon-editor": "npm:^1.0.7"
+=======
+>>>>>>> d424293 (update)
     "@tamagui/animations-css": "npm:^1.125.14"
     "@tamagui/animations-react-native": "npm:^1.125.14"
     "@tamagui/font-inter": "npm:^1.125.14"

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // screens/MapScreen/index.tsx
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Settings, User } from '@tamagui/lucide-icons';
@@ -8,6 +9,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Separator, SizableText, Tabs, TabsContentProps } from 'tamagui';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { auth, database } from '../../services/firebase';
+=======
+// screens/MapScreen.tsx
+import { StackNavigationProp } from '@react-navigation/stack';
+import React from 'react';
+import { View } from 'react-native';
+import { Button, Separator, SizableText, Tabs, TabsContentProps } from 'tamagui';
+import { RootStackParamList } from '../../navigation/RootNavigator';
+>>>>>>> d424293 (update)
 import GuideMap from './GuideMap';
 import ReviewSheet from './ReviewSheet';
 import TravelerMap from './TravelerMap';
@@ -18,6 +27,7 @@ type Props = {
   navigation: MapScreenNavigationProp;
 };
 
+<<<<<<< HEAD
 const { width } = Dimensions.get('window');
 
 const MapScreen: React.FC<Props> = ({ navigation }) => {
@@ -49,10 +59,18 @@ const MapScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+=======
+const MapScreen: React.FC<Props> = ({ navigation }) => {
+  const [open, setOpen] = React.useState(false);
+
+  return (
+    <View>
+>>>>>>> d424293 (update)
       <Tabs
         defaultValue="tab1"
         orientation="horizontal"
         flexDirection="column"
+<<<<<<< HEAD
         style={styles.tabs}
       >
         {/* タブの切り替え */}
@@ -64,13 +82,36 @@ const MapScreen: React.FC<Props> = ({ navigation }) => {
         >
           <Tabs.Tab
             focusStyle={{ backgroundColor: '$color3' }}
+=======
+        width={400}
+        height={"100%"}
+        borderWidth="$0.25"
+        overflow="hidden"
+        borderColor="$borderColor"
+      >
+        <Tabs.List
+          separator={<Separator vertical />}
+          disablePassBorderRadius="bottom"
+          aria-label="Manage your account"
+        >
+          <Tabs.Tab
+            focusStyle={{
+              backgroundColor: '$color3',
+            }}
+>>>>>>> d424293 (update)
             flex={1}
             value="tab1"
           >
             <SizableText fontFamily="$body">旅行者</SizableText>
           </Tabs.Tab>
           <Tabs.Tab
+<<<<<<< HEAD
             focusStyle={{ backgroundColor: '$color3' }}
+=======
+            focusStyle={{
+              backgroundColor: '$color3',
+            }}
+>>>>>>> d424293 (update)
             flex={1}
             value="tab2"
           >
@@ -78,18 +119,25 @@ const MapScreen: React.FC<Props> = ({ navigation }) => {
           </Tabs.Tab>
         </Tabs.List>
         <Separator />
+<<<<<<< HEAD
 
         {/* 旅行者タブ */}
+=======
+>>>>>>> d424293 (update)
         <TabsContent value="tab1">
           <TravelerMap />
         </TabsContent>
 
+<<<<<<< HEAD
         {/* ガイドタブ */}
+=======
+>>>>>>> d424293 (update)
         <TabsContent value="tab2">
           <GuideMap />
         </TabsContent>
       </Tabs>
 
+<<<<<<< HEAD
       {/* 下部中央の「マッチ一覧」ボタン */}
       <Button
         style={styles.matchListButton}
@@ -121,16 +169,44 @@ const MapScreen: React.FC<Props> = ({ navigation }) => {
       {/* ReviewSheet のモーダルが自動で表示される */}
       <ReviewSheet open={open} setOpen={setOpen} />
     </SafeAreaView>
+=======
+      <Button
+        position='absolute'
+        bottom={32}
+        right={32}
+        themeInverse
+        fontWeight={"bold"}
+        onPress={() => navigation.navigate('MatchingList')}>マッチ一覧</Button>
+
+      <Button
+        position='absolute'
+        bottom={100}
+        right={32}
+        themeInverse
+        fontWeight={"bold"}
+        onPress={() => setOpen(!open)}>open review</Button>
+
+      <ReviewSheet open={open} setOpen={setOpen} />
+    </View>
+>>>>>>> d424293 (update)
   );
 };
 
 export default MapScreen;
 
+<<<<<<< HEAD
 /** TabsContent コンポーネント */
+=======
+>>>>>>> d424293 (update)
 const TabsContent = (props: TabsContentProps) => {
   return (
     <Tabs.Content
       backgroundColor="$background"
+<<<<<<< HEAD
+=======
+      key="tab3"
+      padding="$2"
+>>>>>>> d424293 (update)
       alignItems="center"
       justifyContent="center"
       flex={1}
@@ -143,6 +219,7 @@ const TabsContent = (props: TabsContentProps) => {
     >
       {props.children}
     </Tabs.Content>
+<<<<<<< HEAD
   );
 };
 
@@ -186,3 +263,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
 });
+=======
+  )
+}
+>>>>>>> d424293 (update)
