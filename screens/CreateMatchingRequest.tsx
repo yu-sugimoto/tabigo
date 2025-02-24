@@ -1,5 +1,5 @@
 // screens/CreateMatchingRequest.tsx
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import { push, ref } from 'firebase/database';
 import React, { useState } from 'react';
 import { Alert, StyleSheet } from 'react-native';
@@ -9,20 +9,15 @@ import { auth, database } from '../services/firebase';
 
 type CreateMatchingRequestRouteProp = RouteProp<RootStackParamList, 'CreateMatchingRequest'>;
 
-type Props = {
-  route: CreateMatchingRequestRouteProp;
-};
+const CreateMatchingRequest: React.FC = () => {
+  // Here we assume guideId is always passed in the route parameters.
+  const { guideId } = useRoute<CreateMatchingRequestRouteProp>().params;
 
-const CreateMatchingRequest: React.FC<Props> = ({ route }) => {
-  // guideId をルートパラメータから取得（必須）
-  const { guideId } = route.params;
-
-  // 入力項目の状態
   const [timeSlot, setTimeSlot] = useState('');
   const [notes, setNotes] = useState('');
 
   const handleSaveRequest = async () => {
-    // guideId が空の場合はエラー表示
+    // If guideId is missing, throw an error (this should not happen because guideId is required)
     if (!guideId.trim()) {
       Alert.alert('Error', 'ガイドが選択されていません');
       return;
@@ -36,12 +31,12 @@ const CreateMatchingRequest: React.FC<Props> = ({ route }) => {
       Alert.alert('Error', '希望時間帯を入力してください');
       return;
     }
-    // リクエストデータの作成
+    // Create the request data using the current user's uid as touristId and the passed guideId.
     const requestData = {
       touristId: uid,
-      guideId, // ルートパラメータで渡された guideId を使用
+      guideId,
       status: "pending",
-      date: new Date().toISOString().split("T")[0], // yyyy-mm-dd形式
+      date: new Date().toISOString().split("T")[0],
       timeSlot,
       notes,
       createdAt: Date.now(),
@@ -101,6 +96,6 @@ export default CreateMatchingRequest;
 
 const styles = StyleSheet.create({
   saveButton: {
-    backgroundColor: '#000', // 黒いボタン
+    backgroundColor: '#000', // Black button
   },
 });

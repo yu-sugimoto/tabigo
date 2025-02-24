@@ -28,6 +28,7 @@ const MatchingListScreen: React.FC<{ navigation: MatchingListScreenNavigationPro
 
   useEffect(() => {
     if (!uid) return;
+    // Get user role
     const userRef = ref(database, `users/${uid}`);
     const unsubscribeUser = onValue(userRef, (snapshot) => {
       const data = snapshot.val();
@@ -40,6 +41,7 @@ const MatchingListScreen: React.FC<{ navigation: MatchingListScreenNavigationPro
 
   useEffect(() => {
     if (!uid) return;
+    // Listen for requests changes
     const requestsRef = ref(database, 'requests');
     const unsubscribeRequests = onValue(requestsRef, (snapshot) => {
       const data = snapshot.val();
@@ -50,13 +52,14 @@ const MatchingListScreen: React.FC<{ navigation: MatchingListScreenNavigationPro
         });
       }
       // When userRole is set, filter by UID accordingly.
-      if (userRole === 'guide') {
-        setRequests(reqList.filter((r) => r.guideId === uid));
-      } else if (userRole === 'traveler') {
-        setRequests(reqList.filter((r) => r.touristId === uid));
-      } else {
-        setRequests([]);
-      }
+      console.log("hey",)
+      setRequests(reqList.filter((r) => r.guideId === uid || r.touristId === uid));
+      // if (userRole === 'guide') {
+      // } else if (userRole === 'traveler') {
+      //   setRequests(reqList.filter((r) => r.touristId === uid));
+      // } else {
+      //   setRequests([]);
+      // }
       setLoading(false);
     });
     return () => unsubscribeRequests();
@@ -100,7 +103,7 @@ const MatchingListScreen: React.FC<{ navigation: MatchingListScreenNavigationPro
             </Text>
             <Text style={styles.status}>ステータス: {req.status}</Text>
             <Text style={styles.timeSlot}>希望時間帯: {req.timeSlot}</Text>
-            {userRole === 'guide' && req.status === 'pending' && (
+            {req.guideId == uid && req.status === 'pending' && (
               <View style={styles.actionButtons}>
                 <TouchableOpacity
                   style={styles.actionButton}
