@@ -58,6 +58,8 @@ const MatchingListScreen: React.FC<MatchingListScreenProps> = ({ navigation }) =
         return '承認済み';
       case 'rejected':
         return '却下';
+      case 'reviewWait':
+        return 'レビュー待ち'
       default:
         return status;
     }

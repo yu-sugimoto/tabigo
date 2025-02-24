@@ -24,7 +24,7 @@ type Props = {
 type RequestData = {
   touristId: string;
   guideId: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'reviewWait';
   area?: string;         // エリア情報
   date: string;          // 例: "2025-02-24"
   timeSlot: string;      // 例: "12:34-13:45"
@@ -45,6 +45,7 @@ const MatchDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     pending: '保留中',
     accepted: '承認済',
     rejected: '却下',
+    reviewWait: 'レビュー待ち'
   };
 
   useEffect(() => {
