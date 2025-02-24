@@ -1,13 +1,20 @@
 import { StackNavigationProp } from '@react-navigation/stack';
 import { onValue, ref, update } from 'firebase/database';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Button } from 'tamagui';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { auth, database } from '../services/firebase';
 
-type MatchingListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MatchingList'>;
-
+// リクエストの型
 type RequestData = {
   id: string;
   touristId: string;
@@ -20,15 +27,56 @@ type RequestData = {
   updatedAt: number;
 };
 
-const MatchingListScreen: React.FC<{ navigation: MatchingListScreenNavigationProp }> = ({ navigation }) => {
+// ユーザーの簡易情報
+type UserProfile = {
+  name: string;
+  role: 'guide' | 'traveler';
+};
+
+type MatchingListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MatchingList'>;
+
+interface MatchingListScreenProps {
+  navigation: MatchingListScreenNavigationProp;
+}
+
+const MatchingListScreen: React.FC<MatchingListScreenProps> = ({ navigation }) => {
   const [requests, setRequests] = useState<RequestData[]>([]);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<'guide' | 'traveler' | null>(null);
+
+  // 全ユーザー情報をマップ形式で保持（ uid -> { name, role, ... } ）
+  const [userMap, setUserMap] = useState<{ [uid: string]: UserProfile }>({});
+
   const uid = auth.currentUser?.uid;
 
+  // ▼ ステータスを日本語に変換する補助関数
+  const statusToJapanese = (status: string): string => {
+    switch (status) {
+      case 'pending':
+        return '保留中';
+      case 'accepted':
+        return '承認済み';
+      case 'rejected':
+        return '却下';
+      default:
+        return status;
+    }
+  };
+
+  // ▼ 全ユーザー情報を取得し、userMapに格納
+  useEffect(() => {
+    const usersRef = ref(database, 'users');
+    const unsubscribeUsers = onValue(usersRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      // dataは { uid1: { name, role, ... }, uid2: { ... }, ... } の形
+      setUserMap(data);
+    });
+    return () => unsubscribeUsers();
+  }, []);
+
+  // ▼ 現在ユーザーの role を取得
   useEffect(() => {
     if (!uid) return;
-    // Get user role
     const userRef = ref(database, `users/${uid}`);
     const unsubscribeUser = onValue(userRef, (snapshot) => {
       const data = snapshot.val();
@@ -39,42 +87,42 @@ const MatchingListScreen: React.FC<{ navigation: MatchingListScreenNavigationPro
     return () => unsubscribeUser();
   }, [uid]);
 
+  // ▼ requests ノードを購読し、自分に関連するリクエストだけを抽出
   useEffect(() => {
     if (!uid) return;
-    // Listen for requests changes
     const requestsRef = ref(database, 'requests');
     const unsubscribeRequests = onValue(requestsRef, (snapshot) => {
-      const data = snapshot.val();
-      const reqList: RequestData[] = [];
-      if (data) {
-        Object.keys(data).forEach((key) => {
-          reqList.push({ id: key, ...data[key] });
-        });
-      }
-      // When userRole is set, filter by UID accordingly.
-      console.log("hey",)
-      setRequests(reqList.filter((r) => r.guideId === uid || r.touristId === uid));
-      // if (userRole === 'guide') {
-      // } else if (userRole === 'traveler') {
-      //   setRequests(reqList.filter((r) => r.touristId === uid));
-      // } else {
-      //   setRequests([]);
-      // }
+      const data = snapshot.val() || {};
+      const reqList: RequestData[] = Object.keys(data).map((key) => ({
+        id: key,
+        ...data[key],
+      }));
+
+      // ガイド or 旅行者に関わらず、
+      // 自分が touristId もしくは guideId のものを抽出
+      const filtered = reqList.filter(
+        (r) => r.guideId === uid || r.touristId === uid
+      );
+      setRequests(filtered);
       setLoading(false);
     });
     return () => unsubscribeRequests();
   }, [uid, userRole]);
 
-  // For guide: allow status updates
+  // ▼ ガイドがステータスを更新する処理
   const updateRequestStatus = async (requestId: string, newStatus: string) => {
     try {
-      await update(ref(database, `requests/${requestId}`), { status: newStatus, updatedAt: Date.now() });
-      Alert.alert('Success', `リクエストを ${newStatus} に更新しました`);
+      await update(ref(database, `requests/${requestId}`), {
+        status: newStatus,
+        updatedAt: Date.now(),
+      });
+      Alert.alert('Success', `リクエストを ${statusToJapanese(newStatus)} に更新しました`);
     } catch (error: any) {
       Alert.alert('Error', error.message);
     }
   };
 
+  // ▼ ローディング中の表示
   if (loading) {
     return (
       <View style={styles.loader}>
@@ -83,54 +131,72 @@ const MatchingListScreen: React.FC<{ navigation: MatchingListScreenNavigationPro
     );
   }
 
+  // ▼ リクエストが0件の場合
   if (requests.length === 0) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>マッチ一覧</Text>
-        <Text>該当するリクエストはありません。</Text>
+        <Text style={styles.emptyText}>該当するリクエストはありません。</Text>
       </View>
     );
   }
 
+  // ▼ カードリストの表示
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>マッチ一覧</Text>
-      <ScrollView style={styles.list}>
-        {requests.map((req) => (
-          <View key={req.id} style={styles.item}>
-            <Text style={styles.name}>
-              {userRole === 'guide' ? '旅行者からのリクエスト' : 'リクエスト'}
-            </Text>
-            <Text style={styles.status}>ステータス: {req.status}</Text>
-            <Text style={styles.timeSlot}>希望時間帯: {req.timeSlot}</Text>
-            {req.guideId == uid && req.status === 'pending' && (
-              <View style={styles.actionButtons}>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => updateRequestStatus(req.id, 'accepted')}
+      <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
+        {requests.map((req) => {
+          // ガイド視点の場合は旅行者の名前を表示
+          // 旅行者視点の場合はガイドの名前を表示
+          const counterpartId = userRole === 'guide' ? req.touristId : req.guideId;
+          const counterpartName = userMap[counterpartId]?.name || 'ユーザー';
+
+          return (
+            <TouchableOpacity
+              key={req.id}
+              style={styles.card}
+              activeOpacity={0.9}
+              onPress={() => navigation.navigate('MatchDetail', { requestId: req.id })}
+            >
+              <Text style={styles.userName}>{counterpartName} さん</Text>
+              <Text style={styles.status}>
+                ステータス: {statusToJapanese(req.status)}
+              </Text>
+              <Text style={styles.timeSlot}>
+                希望時間帯: {req.timeSlot || '未設定'}
+              </Text>
+
+              {/* ガイドの場合 && ステータスが保留中（pending）のときは承認・却下ボタンを表示 */}
+              {userRole === 'guide' && req.status === 'pending' && (
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.acceptButton]}
+                    onPress={() => updateRequestStatus(req.id, 'accepted')}
+                  >
+                    <Text style={styles.actionButtonText}>承認</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.rejectButton]}
+                    onPress={() => updateRequestStatus(req.id, 'rejected')}
+                  >
+                    <Text style={styles.actionButtonText}>却下</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* 旅行者の場合 && ステータスが承認済み（accepted）ならチャットボタンを表示 */}
+              {userRole === 'traveler' && req.status === 'accepted' && (
+                <Button
+                  size="$4"
+                  theme="blue"
+                  style={styles.chatButton}
+                  onPress={() => navigation.navigate('Chat', { chatId: req.id })}
                 >
-                  <Text style={styles.actionButtonText}>Accept</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.rejectButton]}
-                  onPress={() => updateRequestStatus(req.id, 'rejected')}
-                >
-                  <Text style={styles.actionButtonText}>Reject</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-            {userRole === 'traveler' && req.status === 'accepted' && (
-              <Button
-                onPress={() => navigation.navigate('Chat', { chatId: req.id })}
-              >
-                Chat
-              </Button>
-            )}
-            <TouchableOpacity onPress={() => navigation.navigate('MatchDetail', { requestId: req.id })}>
-              <Text style={styles.detailLink}>詳細を見る</Text>
+                  チャットへ
+                </Button>
+              )}
             </TouchableOpacity>
-          </View>
-        ))}
+          );
+        })}
       </ScrollView>
     </View>
   );
@@ -139,17 +205,82 @@ const MatchingListScreen: React.FC<{ navigation: MatchingListScreenNavigationPro
 export default MatchingListScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 24, marginBottom: 16, textAlign: 'center' },
-  list: { flex: 1 },
-  item: { padding: 12, backgroundColor: '#eee', borderRadius: 4, marginBottom: 12 },
-  name: { fontSize: 16, fontWeight: 'bold' },
-  status: { fontSize: 14, color: '#555', marginTop: 4 },
-  timeSlot: { fontSize: 14, color: '#555', marginTop: 4 },
-  actionButtons: { flexDirection: 'row', marginTop: 8, justifyContent: 'space-around' },
-  actionButton: { backgroundColor: '#007bff', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 4 },
-  rejectButton: { backgroundColor: '#ff3b30' },
-  actionButtonText: { color: '#fff', fontWeight: 'bold' },
-  detailLink: { marginTop: 8, color: '#007bff', textDecorationLine: 'underline' },
+  container: {
+    flex: 1,
+    backgroundColor: '#f9f9f9', // 薄いグレー
+  },
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    marginTop: 40,
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#555',
+  },
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    paddingVertical: 16,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+
+    // iOS shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+
+    // Android elevation
+    elevation: 2,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  status: {
+    fontSize: 15,
+    color: '#333',
+    marginBottom: 4,
+  },
+  timeSlot: {
+    fontSize: 15,
+    color: '#333',
+    marginBottom: 12,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  actionButton: {
+    flex: 1,
+    marginHorizontal: 4,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  acceptButton: {
+    backgroundColor: '#007bff',
+  },
+  rejectButton: {
+    backgroundColor: '#ff3b30',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  chatButton: {
+    marginTop: 8,
+    borderRadius: 8,
+  },
 });
