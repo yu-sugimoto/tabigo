@@ -1,52 +1,112 @@
 // screens/ChatScreen.tsx
+import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import React, { useState } from 'react';
-import { Button, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { onChildAdded, onValue, push, ref } from 'firebase/database';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Button,
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { RootStackParamList } from '../navigation/RootNavigator';
+import { auth, database } from '../services/firebase';
 
 type ChatScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Chat'>;
+type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
 type Props = {
   navigation: ChatScreenNavigationProp;
+  route: ChatScreenRouteProp;
 };
 
-type Message = {
+export type Message = {
   id: string;
   text: string;
-  sender: 'me' | 'other';
+  sender: string;
+  createdAt: number;
 };
 
-const ChatScreen: React.FC<Props> = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    { id: '1', text: 'こんにちは！', sender: 'other' },
-    { id: '2', text: 'はじめまして！よろしくお願いします。', sender: 'me' },
-  ]);
+const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
+  const { chatId } = route.params; // chatId is now required per the RootStackParamList
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const sendMessage = () => {
-    if (!inputText) return;
-    const newMessage: Message = {
-      id: String(Date.now()),
-      text: inputText,
-      sender: 'me',
+  useEffect(() => {
+    const messagesRef = ref(database, `chats/${chatId}/messages`);
+
+    // Listen for overall value changes. This fires once even if the node is empty.
+    const valueListener = onValue(messagesRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        setLoading(false);
+      }
+    });
+
+    // Listen for child added events.
+    const childListener = onChildAdded(messagesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setMessages((prev) => [
+          ...prev,
+          { id: snapshot.key || String(Date.now()), ...data },
+        ]);
+      }
+      // Even if a child is added, ensure loading is false.
+      setLoading(false);
+    });
+
+    return () => {
+      // Cleanup both listeners:
+      // You can call off() on messagesRef for each event type.
+      // For example:
+      // off(messagesRef, 'value', valueListener);
+      // off(messagesRef, 'child_added', childListener);
     };
-    setMessages((prev) => [...prev, newMessage]);
-    setInputText('');
+  }, [chatId]);
+
+
+  const sendMessage = async () => {
+    if (!inputText.trim()) return;
+    const uid = auth.currentUser?.uid;
+    if (!uid) {
+      Alert.alert('Error', 'ユーザーが認証されていません');
+      return;
+    }
+    const newMessage: Omit<Message, 'id'> = {
+      text: inputText,
+      sender: uid,
+      createdAt: Date.now(),
+    };
+    try {
+      const messagesRef = ref(database, `chats/${chatId}/messages`);
+      await push(messagesRef, newMessage);
+      setInputText('');
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+    }
   };
 
   const renderItem = ({ item }: { item: Message }) => {
-    const isMe = item.sender === 'me';
+    const isMe = item.sender === auth.currentUser?.uid;
     return (
-      <View
-        style={[
-          styles.messageContainer,
-          isMe ? styles.myMessage : styles.otherMessage,
-        ]}
-      >
+      <View style={[styles.messageContainer, isMe ? styles.myMessage : styles.otherMessage]}>
         <Text style={styles.messageText}>{item.text}</Text>
       </View>
     );
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -88,9 +148,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
     alignSelf: 'flex-start',
   },
-  messageText: {
-    color: '#fff',
-  },
+  messageText: { color: '#fff' },
   inputArea: {
     flexDirection: 'row',
     padding: 8,
@@ -104,5 +162,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
     borderRadius: 4,
     paddingHorizontal: 8,
+  },
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

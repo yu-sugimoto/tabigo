@@ -1,5 +1,5 @@
 // screens/CreateMatchingRequest.tsx
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp } from '@react-navigation/native';
 import { push, ref } from 'firebase/database';
 import React, { useState } from 'react';
 import { Alert, StyleSheet } from 'react-native';
@@ -7,17 +7,22 @@ import { Button, Input, Paragraph, YStack } from 'tamagui';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { auth, database } from '../services/firebase';
 
-const CreateMatchingRequest: React.FC = () => {
-  // ルートパラメータから guideId を取得（必須）
-  const route = useRoute<RouteProp<RootStackParamList, 'CreateMatchingRequest'>>();
-  const guideId = route.params?.guideId || '';
+type CreateMatchingRequestRouteProp = RouteProp<RootStackParamList, 'CreateMatchingRequest'>;
 
-  // 入力項目
+type Props = {
+  route: CreateMatchingRequestRouteProp;
+};
+
+const CreateMatchingRequest: React.FC<Props> = ({ route }) => {
+  // guideId をルートパラメータから取得（必須）
+  const { guideId } = route.params;
+
+  // 入力項目の状態
   const [timeSlot, setTimeSlot] = useState('');
   const [notes, setNotes] = useState('');
 
   const handleSaveRequest = async () => {
-    // guideId が空の場合はエラーを表示
+    // guideId が空の場合はエラー表示
     if (!guideId.trim()) {
       Alert.alert('Error', 'ガイドが選択されていません');
       return;
@@ -79,7 +84,13 @@ const CreateMatchingRequest: React.FC = () => {
         padding="$3"
         multiline
       />
-      <Button onPress={handleSaveRequest} theme="active" size="$4" style={styles.saveButton} themeInverse>
+      <Button
+        onPress={handleSaveRequest}
+        theme="active"
+        size="$4"
+        style={styles.saveButton}
+        themeInverse
+      >
         リクエスト送信
       </Button>
     </YStack>

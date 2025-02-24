@@ -6,13 +6,13 @@ import React, { useEffect, useState } from 'react';
 import { auth } from '../services/firebase';
 
 import ChatScreen from '../screens/ChatScreen';
-import CreateMatchingRequestScreen from '../screens/CreateMatchingRequest';
+import CreateMatchingRequest from '../screens/CreateMatchingRequest';
 import LoginScreen from '../screens/LoginScreen';
 import MapScreen from '../screens/MapScreen';
 import MatchDetailScreen from '../screens/MatchDetailScreen';
 import MatchingListScreen from '../screens/MatchingListScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-import SettingsScreen from '../screens/SettingsScreen'; // 設定画面を追加
+import ProfileSettingsScreen from '../screens/ProfileScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 
 export type RootStackParamList = {
@@ -21,7 +21,7 @@ export type RootStackParamList = {
   Map: undefined;
   MatchingList: undefined;
   MatchDetail: { requestId: string };
-  Chat: undefined;
+  Chat: { chatId: string };
   Profile: undefined;
   Settings: undefined;
   CreateMatchingRequest: { guideId: string };
@@ -38,17 +38,13 @@ const AuthStack: React.FC = () => (
 
 const AppStack: React.FC = () => (
   <Stack.Navigator>
-    <Stack.Screen
-      name="Map"
-      component={MapScreen}
-      options={{ title: 'マップ', headerShown: false }}
-    />
+    <Stack.Screen name="Map" component={MapScreen} options={{ headerShown: false }} />
     <Stack.Screen name="MatchingList" component={MatchingListScreen} options={{ title: 'マッチ一覧' }} />
     <Stack.Screen name="MatchDetail" component={MatchDetailScreen} options={{ title: 'マッチ詳細' }} />
     <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'チャット' }} />
-    <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'プロフィール設定' }} />
+    <Stack.Screen name="Profile" component={ProfileSettingsScreen} options={{ title: 'プロフィール設定' }} />
     <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: '設定' }} />
-    <Stack.Screen name="CreateMatchingRequest" component={CreateMatchingRequestScreen} options={{ title: 'リクエスト作成' }} />
+    <Stack.Screen name="CreateMatchingRequest" component={CreateMatchingRequest} options={{ title: 'リクエスト作成' }} />
   </Stack.Navigator>
 );
 
