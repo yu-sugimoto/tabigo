@@ -6,10 +6,13 @@ import React, { useEffect, useState } from 'react';
 import { auth } from '../services/firebase';
 
 import ChatScreen from '../screens/ChatScreen';
+import CreateMatchingRequestScreen from '../screens/CreateMatchingRequest';
 import LoginScreen from '../screens/LoginScreen';
 import MapScreen from '../screens/MapScreen';
 import MatchDetailScreen from '../screens/MatchDetailScreen';
 import MatchingListScreen from '../screens/MatchingListScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import SettingsScreen from '../screens/SettingsScreen'; // 設定画面を追加
 import SignUpScreen from '../screens/SignUpScreen';
 
 export type RootStackParamList = {
@@ -17,13 +20,15 @@ export type RootStackParamList = {
   SignUp: undefined;
   Map: undefined;
   MatchingList: undefined;
-  MatchDetail: undefined;
+  MatchDetail: { requestId: string };
   Chat: undefined;
+  Profile: undefined;
+  Settings: undefined;
+  CreateMatchingRequest: { guideId: string };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
 
-// 未認証用スタック
 const AuthStack: React.FC = () => (
   <Stack.Navigator>
     <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
@@ -31,13 +36,19 @@ const AuthStack: React.FC = () => (
   </Stack.Navigator>
 );
 
-// 認証済み用スタック
 const AppStack: React.FC = () => (
   <Stack.Navigator>
-    <Stack.Screen name="Map" component={MapScreen} options={{ title: 'マップ' }} />
+    <Stack.Screen
+      name="Map"
+      component={MapScreen}
+      options={{ title: 'マップ', headerShown: false }}
+    />
     <Stack.Screen name="MatchingList" component={MatchingListScreen} options={{ title: 'マッチ一覧' }} />
     <Stack.Screen name="MatchDetail" component={MatchDetailScreen} options={{ title: 'マッチ詳細' }} />
     <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'チャット' }} />
+    <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'プロフィール設定' }} />
+    <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: '設定' }} />
+    <Stack.Screen name="CreateMatchingRequest" component={CreateMatchingRequestScreen} options={{ title: 'リクエスト作成' }} />
   </Stack.Navigator>
 );
 
@@ -53,7 +64,6 @@ const RootNavigator: React.FC = () => {
     return unsubscribe;
   }, [initializing]);
 
-  // 初期化中はスプラッシュ画面などを表示する
   if (initializing) return null;
 
   return (
