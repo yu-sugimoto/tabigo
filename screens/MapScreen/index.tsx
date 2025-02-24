@@ -23,7 +23,6 @@ const { width } = Dimensions.get('window');
 const MapScreen: React.FC<Props> = ({ navigation }) => {
   const [open, setOpen] = React.useState(false);
 
-  // 自分が旅行者の場合、requests から reviewWait 状態のリクエストがあれば自動で ReviewSheet を開く
   useEffect(() => {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
@@ -34,8 +33,12 @@ const MapScreen: React.FC<Props> = ({ navigation }) => {
       if (data) {
         Object.keys(data).forEach((key) => {
           const req = data[key];
-          // ここでは旅行者側の場合を想定（必要に応じてガイドの場合も追加）
-          if (req.touristId === uid && req.status === 'reviewWait') {
+          // 旅行者側の場合、statusが'reviewWait'かつ作成から60秒以上経過している場合のみ
+          if (
+            req.touristId === uid &&
+            req.status === 'reviewWait' &&
+            Date.now() - req.createdAt > 60000
+          ) {
             found = true;
           }
         });
@@ -118,7 +121,7 @@ const MapScreen: React.FC<Props> = ({ navigation }) => {
         <Settings size={20} color="#fff" />
       </Button>
 
-      {/* ReviewSheet のモーダルが自動で表示される */}
+      {/* ReviewSheet は自動で表示される */}
       <ReviewSheet open={open} setOpen={setOpen} />
     </SafeAreaView>
   );
@@ -167,7 +170,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 120, // ステータスバーやノッチを避けるために少し下げる
     right: 16,
-    width: 48, // アイコンに合わせた固定サイズ
+    width: 48,
     height: 48,
     borderRadius: 24,
     justifyContent: 'center',
