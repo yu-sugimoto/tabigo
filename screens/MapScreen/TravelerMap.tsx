@@ -109,8 +109,8 @@ const TravelerMap: React.FC = () => {
     <MapView
       style={styles.map}
       initialRegion={{
-        latitude: 35.681236,
-        longitude: 139.767125,
+        latitude: 35.0036069,
+        longitude: 135.75871630683565,
         latitudeDelta: 0.05,
         longitudeDelta: 0.05,
       }}

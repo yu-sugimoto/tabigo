@@ -6,12 +6,15 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Button,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
-  View,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { auth, database } from '../services/firebase';
@@ -32,7 +35,7 @@ export type Message = {
 };
 
 const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { chatId } = route.params; // chatId is now required per the RootStackParamList
+  const { chatId } = route.params; // chatId is required
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -40,14 +43,14 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
   useEffect(() => {
     const messagesRef = ref(database, `chats/${chatId}/messages`);
 
-    // Listen for overall value changes. This fires once even if the node is empty.
+    // Listener for overall value changes (fires once)
     const valueListener = onValue(messagesRef, (snapshot) => {
       if (!snapshot.exists()) {
         setLoading(false);
       }
     });
 
-    // Listen for child added events.
+    // Listener for child added events
     const childListener = onChildAdded(messagesRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -56,19 +59,13 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           { id: snapshot.key || String(Date.now()), ...data },
         ]);
       }
-      // Even if a child is added, ensure loading is false.
       setLoading(false);
     });
 
     return () => {
-      // Cleanup both listeners:
-      // You can call off() on messagesRef for each event type.
-      // For example:
-      // off(messagesRef, 'value', valueListener);
-      // off(messagesRef, 'child_added', childListener);
+      // Optionally, remove listeners using off() if needed
     };
   }, [chatId]);
-
 
   const sendMessage = async () => {
     if (!inputText.trim()) return;
@@ -94,8 +91,15 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
   const renderItem = ({ item }: { item: Message }) => {
     const isMe = item.sender === auth.currentUser?.uid;
     return (
-      <View style={[styles.messageContainer, isMe ? styles.myMessage : styles.otherMessage]}>
-        <Text style={styles.messageText}>{item.text}</Text>
+      <View
+        style={[
+          styles.messageContainer,
+          isMe ? styles.myMessage : styles.otherMessage,
+        ]}
+      >
+        <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.otherMessageText]}>
+          {item.text}
+        </Text>
       </View>
     );
   };
@@ -109,59 +113,107 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
   }
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        style={styles.chatArea}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-      />
-      <View style={styles.inputArea}>
-        <TextInput
-          style={styles.textInput}
-          value={inputText}
-          onChangeText={setInputText}
-          placeholder="メッセージを入力"
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoid}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 70}
+      >
+        <FlatList
+          style={styles.chatArea}
+          contentContainerStyle={styles.chatContentContainer}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
         />
-        <Button title="送信" onPress={sendMessage} />
-      </View>
-    </View>
+        <View style={styles.inputArea}>
+          <TextInput
+            style={styles.textInput}
+            value={inputText}
+            onChangeText={setInputText}
+            placeholder="メッセージを入力"
+            placeholderTextColor="#999"
+          />
+          <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+            <Text style={styles.sendButtonText}>送信</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 export default ChatScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  chatArea: { flex: 1, padding: 8 },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  keyboardAvoid: {
+    flex: 1,
+  },
+  chatArea: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  chatContentContainer: {
+    paddingBottom: 50, // Reduced padding to bring input area up a bit
+  },
   messageContainer: {
-    marginVertical: 4,
-    padding: 8,
-    borderRadius: 6,
-    maxWidth: '70%',
+    marginVertical: 6,
+    padding: 10,
+    borderRadius: 30, // Fully rounded (pill-shaped)
+    maxWidth: '75%',
   },
   myMessage: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#007bff', // Blue background for my messages
     alignSelf: 'flex-end',
   },
   otherMessage: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#f2f2f2', // Very light grey for others' messages
     alignSelf: 'flex-start',
   },
-  messageText: { color: '#fff' },
+  messageText: {
+    fontSize: 20,
+  },
+  myMessageText: {
+    color: '#fff',
+  },
+  otherMessageText: {
+    color: '#000', // Black text for others' messages
+  },
   inputArea: {
     flexDirection: 'row',
+    alignItems: 'center',
     padding: 8,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: '#ccc',
+    backgroundColor: '#f9f9f9',
   },
   textInput: {
     flex: 1,
-    borderWidth: 1,
+    height: 50, // Slightly smaller height for input
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#ccc',
-    marginRight: 8,
-    borderRadius: 4,
-    paddingHorizontal: 8,
+    borderRadius: 25, // Fully rounded input field
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    fontSize: 16,
+    color: '#000',
+  },
+  sendButton: {
+    backgroundColor: '#000', // Black send button
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 25,
+    marginLeft: 8,
+  },
+  sendButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   loader: {
     flex: 1,

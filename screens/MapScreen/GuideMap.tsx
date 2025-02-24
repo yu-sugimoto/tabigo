@@ -62,10 +62,10 @@ const GuideMap: React.FC = () => {
     <View style={styles.container}>
       {/* マップを全画面に表示 */}
       <MapView
-        style={StyleSheet.absoluteFillObject}
+        style={styles.map}
         initialRegion={{
-          latitude: 35.681236,
-          longitude: 139.767125,
+          latitude: 35.00486693972645,
+          longitude: 135.75871630683565,
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         }}
@@ -97,8 +97,16 @@ const GuideMap: React.FC = () => {
 export default GuideMap;
 
 const styles = StyleSheet.create({
+  map: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'blue',
+  },
   container: {
     flex: 1,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'red',
   },
   loader: {
     flex: 1,
@@ -108,7 +116,7 @@ const styles = StyleSheet.create({
   modeToggleButton: {
     position: 'absolute',
     top: 16,
-    left: 0,
+    right: 64,
     backgroundColor: 'rgba(0,0,0,0.6)',
     paddingVertical: 6,
     paddingHorizontal: 12,
