@@ -1,7 +1,7 @@
 // screens/ChatScreen.tsx
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { onChildAdded, onValue, push, ref } from 'firebase/database';
+import { onChildAdded, onValue, push, ref, update } from 'firebase/database';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,7 +14,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { auth, database } from '../services/firebase';
@@ -43,7 +43,7 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
   useEffect(() => {
     const messagesRef = ref(database, `chats/${chatId}/messages`);
 
-    // Listener for overall value changes (fires once)
+    // Listener for overall value changes (fires once if empty)
     const valueListener = onValue(messagesRef, (snapshot) => {
       if (!snapshot.exists()) {
         setLoading(false);
@@ -62,8 +62,10 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
       setLoading(false);
     });
 
+    // Optionally remove listeners in cleanup if needed
     return () => {
-      // Optionally, remove listeners using off() if needed
+      // off(messagesRef, 'value', valueListener);
+      // off(messagesRef, 'child_added', childListener);
     };
   }, [chatId]);
 
@@ -88,6 +90,35 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
+  // ▼「終了」ボタン押下時の処理
+  const handleEndChat = () => {
+    Alert.alert(
+      'マッチ終了',
+      'この人とのマッチを終了しますか？',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: 'OK',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // requests/<requestId> のステータスを「reviewWait」などに更新
+              await update(ref(database, `requests/${chatId}`), {
+                status: 'reviewWait',
+                updatedAt: Date.now(),
+              });
+              // マップ画面に戻る
+              navigation.navigate('Map');
+            } catch (err: any) {
+              Alert.alert('Error', err.message);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   const renderItem = ({ item }: { item: Message }) => {
     const isMe = item.sender === auth.currentUser?.uid;
     return (
@@ -97,7 +128,12 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           isMe ? styles.myMessage : styles.otherMessage,
         ]}
       >
-        <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.otherMessageText]}>
+        <Text
+          style={[
+            styles.messageText,
+            isMe ? styles.myMessageText : styles.otherMessageText,
+          ]}
+        >
           {item.text}
         </Text>
       </View>
@@ -114,6 +150,13 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {/* 上部に「終了」ボタンを配置 */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.endButton} onPress={handleEndChat}>
+          <Text style={styles.endButtonText}>終了</Text>
+        </TouchableOpacity>
+      </View>
+
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -126,6 +169,7 @@ const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
         />
+
         <View style={styles.inputArea}>
           <TextInput
             style={styles.textInput}
@@ -150,6 +194,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  header: {
+    // 終了ボタンを右上に表示
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+    backgroundColor: '#fff',
+  },
+  endButton: {
+    backgroundColor: '#000',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  endButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   keyboardAvoid: {
     flex: 1,
   },
@@ -159,20 +223,20 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   chatContentContainer: {
-    paddingBottom: 50, // Reduced padding to bring input area up a bit
+    paddingBottom: 50,
   },
   messageContainer: {
     marginVertical: 6,
     padding: 10,
-    borderRadius: 30, // Fully rounded (pill-shaped)
+    borderRadius: 30,
     maxWidth: '75%',
   },
   myMessage: {
-    backgroundColor: '#007bff', // Blue background for my messages
+    backgroundColor: '#007bff',
     alignSelf: 'flex-end',
   },
   otherMessage: {
-    backgroundColor: '#f2f2f2', // Very light grey for others' messages
+    backgroundColor: '#f2f2f2',
     alignSelf: 'flex-start',
   },
   messageText: {
@@ -182,7 +246,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   otherMessageText: {
-    color: '#000', // Black text for others' messages
+    color: '#000',
   },
   inputArea: {
     flexDirection: 'row',
@@ -194,17 +258,17 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    height: 50, // Slightly smaller height for input
+    height: 50,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#ccc',
-    borderRadius: 25, // Fully rounded input field
+    borderRadius: 25,
     paddingHorizontal: 12,
     backgroundColor: '#fff',
     fontSize: 16,
     color: '#000',
   },
   sendButton: {
-    backgroundColor: '#000', // Black send button
+    backgroundColor: '#000',
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 25,

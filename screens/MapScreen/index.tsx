@@ -1,11 +1,13 @@
 // screens/MapScreen/index.tsx
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Settings, User } from '@tamagui/lucide-icons';
-import React from 'react';
+import { onValue, ref } from 'firebase/database';
+import React, { useEffect } from 'react';
 import { Dimensions, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Separator, SizableText, Tabs, TabsContentProps } from 'tamagui';
 import { RootStackParamList } from '../../navigation/RootNavigator';
+import { auth, database } from '../../services/firebase';
 import GuideMap from './GuideMap';
 import ReviewSheet from './ReviewSheet';
 import TravelerMap from './TravelerMap';
@@ -20,6 +22,30 @@ const { width } = Dimensions.get('window');
 
 const MapScreen: React.FC<Props> = ({ navigation }) => {
   const [open, setOpen] = React.useState(false);
+
+  // 自分が旅行者の場合、requests から reviewWait 状態のリクエストがあれば自動で ReviewSheet を開く
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    const requestsRef = ref(database, 'requests');
+    const unsubscribe = onValue(requestsRef, (snapshot) => {
+      const data = snapshot.val();
+      let found = false;
+      if (data) {
+        Object.keys(data).forEach((key) => {
+          const req = data[key];
+          // ここでは旅行者側の場合を想定（必要に応じてガイドの場合も追加）
+          if (req.touristId === uid && req.status === 'reviewWait') {
+            found = true;
+          }
+        });
+      }
+      if (found) {
+        setOpen(true);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -92,16 +118,7 @@ const MapScreen: React.FC<Props> = ({ navigation }) => {
         <Settings size={20} color="#fff" />
       </Button>
 
-      {/* 下部右側の「open review」ボタン */}
-      <Button
-        style={styles.reviewButton}
-        themeInverse
-        fontWeight="bold"
-        onPress={() => setOpen(!open)}
-      >
-        open review
-      </Button>
-
+      {/* ReviewSheet のモーダルが自動で表示される */}
       <ReviewSheet open={open} setOpen={setOpen} />
     </SafeAreaView>
   );
@@ -150,15 +167,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 120, // ステータスバーやノッチを避けるために少し下げる
     right: 16,
-    width: 48, // ボタンの幅を固定（アイコンに合わせる）
-    height: 48, // ボタンの高さを固定
-    borderRadius: 24, // 丸いボタン風にする
+    width: 48, // アイコンに合わせた固定サイズ
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
   settingsButton: {
     position: 'absolute',
-    top: 120, // 右上のプロフィールボタンと同じ高さにする場合、または適宜調整
+    top: 120,
     left: 16,
     width: 48,
     height: 48,
@@ -167,10 +184,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
-  },
-  reviewButton: {
-    position: 'absolute',
-    bottom: 100,
-    right: 16,
   },
 });
