@@ -21,3 +21,8 @@ React Native × Firebase で開発しました．
 
 ## デモ
 #### 旅行者側
+https://github.com/user-attachments/assets/285a801e-7420-4389-b2d7-d887c848f733
+
+#### ガイド側
+https://github.com/user-attachments/assets/88f13263-a5cf-4427-8b22-5de5d38df877
+
