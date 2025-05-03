@@ -7,7 +7,7 @@
 ![旅go](./assets/markDownText.png)
 
 ### マッチング機能の実装
-React Native × Firebase で開発しました．
+React Native × Firebase で開発しました．認証はFirebase Authentication，位置情報追跡はFirebase Realtime Databaseを使用しました．
 #### 旅行者側
 1. 各ガイドのガイド可能エリアが示されたマップが表示される
 2. ガイドリクエストを送る
